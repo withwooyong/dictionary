@@ -21,11 +21,11 @@ export async function POST(request: Request) {
   const client = new OpenAI();
   const fullPrompt = STYLE + prompt.trim();
 
-  // gpt-image-1 is cheaper and better, but requires a verified organisation;
-  // fall back to dall-e-3 when it is unavailable.
+  // gpt-image-2 at low quality is ~$0.006 per image; if the account can't use
+  // it, gpt-image-1-mini is the cheapest model that takes the same parameters.
   try {
     const result = await client.images.generate({
-      model: process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-1",
+      model: process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-2",
       prompt: fullPrompt,
       size: "1024x1024",
       quality: "low",
@@ -36,10 +36,10 @@ export async function POST(request: Request) {
   } catch {
     try {
       const result = await client.images.generate({
-        model: "dall-e-3",
+        model: "gpt-image-1-mini",
         prompt: fullPrompt,
         size: "1024x1024",
-        response_format: "b64_json",
+        quality: "low",
       });
       const b64 = result.data?.[0]?.b64_json;
       if (!b64) throw new Error("No image data returned.");

@@ -22,7 +22,7 @@ Open http://localhost:3000.
 | --- | --- | --- |
 | `OPENAI_API_KEY` | — | Required. |
 | `OPENAI_MODEL` | `gpt-4o-mini` | Model used for dictionary entries. |
-| `OPENAI_IMAGE_MODEL` | `gpt-image-1` | Falls back to `dall-e-3` automatically if unavailable (gpt-image-1 needs a verified OpenAI organisation). |
+| `OPENAI_IMAGE_MODEL` | `gpt-image-2` | Falls back to `gpt-image-1-mini` automatically if unavailable. |
 
 ## How it works
 
