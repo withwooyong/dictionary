@@ -1,32 +1,70 @@
 # Learner's Lexicon
 
-An English-only dictionary for learners. A short placement test finds your CEFR level (A1–C2), and from then on every word is explained using vocabulary you can actually understand:
+영어 학습자를 위한 영영사전 앱입니다. 간단한 레벨 테스트로 사용자의 CEFR 레벨(A1~C2)을 판정하고, 이후 모든 단어를 그 레벨에서 이해할 수 있는 어휘만 사용해 **영어로만** 설명합니다.
 
-- **Collins COBUILD-style definitions** — full sentences that show the word in use ("If something is *ephemeral*, it lasts for only a very short time.")
-- **Longman Activator-style synonyms** — each synonym comes with its own CEFR level and a note on how it differs from the headword
-- **An illustration for every word** — generated with the OpenAI image API, drawn like a dictionary plate
+- **Collins COBUILD 스타일 정의** — 단어가 실제로 쓰이는 모습을 보여주는 풀센텐스 설명. 예: "If something is *ephemeral*, it lasts for only a very short time."
+- **Longman Activator 스타일 동의어** — 동의어마다 자체 CEFR 레벨과 표제어와의 뉘앙스 차이(격식, 강도, 쓰이는 맥락)를 한 줄로 정리. 동의어를 클릭하면 바로 그 단어를 검색합니다.
+- **단어마다 일러스트 생성** — OpenAI 이미지 API(gpt-image-2)가 단어의 대표 의미를 색연필풍 그림으로 그려줍니다.
 
-## Setup
+## 주요 기능
+
+| 기능 | 설명 |
+| --- | --- |
+| 레벨 테스트 | 8문항 객관식(A1→C2 난이도순). 점수로 레벨을 판정해 localStorage에 저장. 이미 레벨을 알면 건너뛰고 직접 선택 가능 |
+| 레벨 변경 | 헤더의 LEVEL 셀렉트로 즉시 변경, RETAKE TEST로 재응시 |
+| 단어 검색 | 레벨에 맞춘 정의·예문·동의어를 구조화된 JSON(strict schema)으로 생성 |
+| 오타 교정 | 사전에 없는 입력이면 "Did you mean …?" 제안 |
+| 최근 검색 | 최근 8개 단어를 localStorage에 저장, 첫 화면에서 바로 재검색 |
+| 일러스트 | 정의가 먼저 표시되고 그림은 비동기로 로드 (실패해도 사전 기능은 정상 동작) |
+
+## 설치 및 실행
 
 ```bash
-cp .env.local.example .env.local   # then put your OpenAI API key in it
+cp .env.local.example .env.local   # OPENAI_API_KEY 입력 (.env 파일도 동일하게 동작)
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000.
+http://localhost:3000 접속. (3000번 포트가 사용 중이면 Next.js가 자동으로 3001 등 다른 포트를 사용합니다 — 터미널 출력 확인)
 
-## Configuration (`.env.local`)
+## 환경 변수
 
-| Variable | Default | Notes |
+| 변수 | 기본값 | 설명 |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | — | Required. |
-| `OPENAI_MODEL` | `gpt-4o-mini` | Model used for dictionary entries. |
-| `OPENAI_IMAGE_MODEL` | `gpt-image-2` | Falls back to `gpt-image-1-mini` automatically if unavailable. |
+| `OPENAI_API_KEY` | — | 필수. OpenAI API 키 |
+| `OPENAI_MODEL` | `gpt-4o-mini` | 사전 엔트리(정의·동의어) 생성 모델 |
+| `OPENAI_IMAGE_MODEL` | `gpt-image-2` | 일러스트 생성 모델. 사용 불가 시 `gpt-image-1-mini`로 자동 폴백 |
 
-## How it works
+> 비용 참고: 이미지 1장당 약 $0.006(gpt-image-2, low 품질, 1024×1024). 정의 생성은 gpt-4o-mini 기준 회당 $0.001 미만.
 
-- `src/components/LevelTest.tsx` — 8-question placement test; the score maps to a CEFR level stored in `localStorage`. You can also pick a level manually or retake the test anytime.
-- `src/app/api/define/route.ts` — asks OpenAI for a structured entry (strict JSON schema): senses, examples, synonyms, the word's own CEFR level, and an image prompt — all written at the reader's level, English only.
-- `src/app/api/illustrate/route.ts` — turns that image prompt into a coloured-pencil illustration.
-- `src/components/Dictionary.tsx` — search, entry layout, clickable synonyms, recent lookups.
+## 프로젝트 구조
+
+```
+src/
+├── app/
+│   ├── page.tsx                  # 진입점 — 레벨 유무에 따라 테스트/사전 분기
+│   ├── layout.tsx                # 폰트(Newsreader, IBM Plex) 및 메타데이터
+│   ├── globals.css               # 디자인 토큰 (종이 사전 콘셉트)
+│   └── api/
+│       ├── define/route.ts       # 단어 → 구조화된 사전 엔트리 (OpenAI chat + strict JSON schema)
+│       └── illustrate/route.ts   # 이미지 프롬프트 → 색연필풍 일러스트
+├── components/
+│   ├── LevelTest.tsx             # 8문항 레벨 테스트 (인트로 → 퀴즈 → 결과)
+│   └── Dictionary.tsx            # 검색, 엔트리 레이아웃, 동의어 박스, 최근 검색
+└── lib/
+    ├── types.ts                  # CEFR 레벨, 엔트리 타입 정의
+    ├── level-test.ts             # 테스트 문항, 채점 기준, 레벨별 추천 단어
+    └── use-local-storage.ts      # SSR 안전 localStorage 훅 (useSyncExternalStore)
+```
+
+## 동작 흐름
+
+1. 첫 방문 시 레벨 테스트 → 판정된 레벨이 `localStorage`에 저장됩니다.
+2. 단어 검색 시 `/api/define`이 사용자 레벨을 프롬프트에 포함해 OpenAI를 호출합니다. 정의·예문·동의어 전부 해당 레벨 이하 어휘로 작성되며, 더 어려운 단어가 불가피하면 괄호로 쉬운 설명을 덧붙입니다. 한국어는 사용하지 않습니다.
+3. 정의 응답에 포함된 `imagePrompt`로 `/api/illustrate`가 일러스트를 생성합니다.
+
+## 기술 스택
+
+- Next.js 16 (App Router, Turbopack) + React 19 + TypeScript
+- Tailwind CSS v4
+- OpenAI API (`openai` SDK) — chat completions(structured outputs) + images
