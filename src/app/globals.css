@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #faf9f5;
+  --card: #ffffff;
+  --ink: #1c1b1a;
+  --ink-soft: #6b675f;
+  --ballpoint: #2742c8;
+  --ballpoint-wash: #eef0fb;
+  --highlight: #ffe45c;
+  --rule: #e6e3da;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ballpoint: var(--ballpoint);
+  --color-ballpoint-wash: var(--ballpoint-wash);
+  --color-highlight: var(--highlight);
+  --color-rule: var(--rule);
+  --font-display: var(--font-newsreader);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--highlight);
+  color: var(--ink);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--ballpoint);
+    outline-offset: 2px;
+  }
+}
+
+/* Highlighter swipe behind the headword — the learner marked this word. */
+.hl-swipe {
+  background-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    var(--highlight) 3%,
+    var(--highlight) 97%,
+    transparent 100%
+  );
+  background-size: 100% 42%;
+  background-position: 0 78%;
+  background-repeat: no-repeat;
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--rule) 25%,
+    #f1efe8 45%,
+    var(--rule) 65%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.fade-up {
+  animation: fade-up 0.45s ease both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer,
+  .fade-up {
+    animation: none;
+  }
+}
