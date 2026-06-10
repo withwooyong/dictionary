@@ -13,7 +13,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing text to speak." }, { status: 400 });
   }
 
-  const client = new OpenAI();
+  // Fail fast: the SDK default is a 10-minute timeout, which leaves the
+  // client spinner hanging when OpenAI is slow. Our own fallback below
+  // handles the retry, so don't let the SDK retry too.
+  const client = new OpenAI({ timeout: 15_000, maxRetries: 0 });
   const input = text.trim();
 
   async function synthesize(model: string) {
