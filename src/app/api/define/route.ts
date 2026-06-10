@@ -24,6 +24,11 @@ const RESPONSE_SCHEMA = {
       type: "string",
       description: "IPA transcription without surrounding slashes.",
     },
+    koreanGloss: {
+      type: "string",
+      description:
+        "Short natural Korean equivalent of the headword's primary sense (1-4 words).",
+    },
     wordLevel: {
       type: "string",
       enum: [...CEFR_LEVELS],
@@ -43,9 +48,27 @@ const RESPONSE_SCHEMA = {
               additionalProperties: false,
               properties: {
                 definition: { type: "string" },
-                examples: { type: "array", items: { type: "string" } },
+                definitionKo: {
+                  type: "string",
+                  description: "Natural Korean translation of the definition.",
+                },
+                examples: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                      en: { type: "string" },
+                      ko: {
+                        type: "string",
+                        description: "Natural Korean translation of the example.",
+                      },
+                    },
+                    required: ["en", "ko"],
+                  },
+                },
               },
-              required: ["definition", "examples"],
+              required: ["definition", "definitionKo", "examples"],
             },
           },
         },
@@ -65,6 +88,25 @@ const RESPONSE_SCHEMA = {
         required: ["word", "level", "difference"],
       },
     },
+    collocations: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          phrase: {
+            type: "string",
+            description: "A common chunk the headword appears in, e.g. 'pure serendipity'.",
+          },
+          example: { type: "string" },
+          exampleKo: {
+            type: "string",
+            description: "Natural Korean translation of the example.",
+          },
+        },
+        required: ["phrase", "example", "exampleKo"],
+      },
+    },
     imagePrompt: {
       type: "string",
       description:
@@ -76,9 +118,11 @@ const RESPONSE_SCHEMA = {
     "suggestion",
     "headword",
     "pronunciation",
+    "koreanGloss",
     "wordLevel",
     "entries",
     "synonyms",
+    "collocations",
     "imagePrompt",
   ],
 } as const;
@@ -86,13 +130,14 @@ const RESPONSE_SCHEMA = {
 function systemPrompt(level: string) {
   return `You are an expert lexicographer for English learners. You combine two styles: Collins COBUILD for definitions and the Longman Language Activator for synonyms.
 
-The reader's CEFR level is ${level}. Everything you write must be understandable at that level: prefer vocabulary at or below ${level}, and if a harder word is unavoidable, add a short plain-English gloss in brackets right after it.
+The reader's CEFR level is ${level}. Everything you write in English must be understandable at that level: prefer vocabulary at or below ${level}, and if a harder word is unavoidable, add a short plain-English gloss in brackets right after it.
 
 Rules:
-- Write in English only. Never use Korean or any other language.
+- All definitions, examples, synonym notes and collocations are in English. Korean appears ONLY in the fields ending in Ko and in koreanGloss — these are natural, fluent Korean translations provided as a learning aid (번역투를 피하고 자연스러운 한국어로).
 - Definitions are full COBUILD-style sentences that show the word in use, e.g. "If something is ephemeral, it lasts for only a very short time." or "A harbour is an area of water next to the land where boats can stay safely."
 - Give 1–3 senses per part of speech, the most common sense first. Each sense gets exactly 2 natural example sentences, level-appropriate.
-- Synonyms follow the Longman Activator approach: for each one, write one short sentence explaining how it differs from the headword (formality, strength, or typical context). Include each synonym's own CEFR level. Give 3–6 synonyms; if the word has no useful synonyms, give fewer or none.
+- Synonyms follow the Longman Activator approach: for each one, write one short English sentence explaining how it differs from the headword (formality, strength, or typical context). Include each synonym's own CEFR level. Give 3–6 synonyms; if the word has no useful synonyms, give fewer or none.
+- collocations: 3–5 chunks the headword commonly appears in (verb+noun, adjective+noun, fixed phrases), each with one level-appropriate example sentence and its Korean translation.
 - wordLevel is the CEFR level of the headword itself, not the reader's level.
 - imagePrompt describes one concrete, drawable scene that visually explains the word's primary sense. No text, letters, or abstract symbols in the scene.
 - If the input is not a real English word or common phrase, set isWord to false and leave the other fields minimal. If it looks like a typo, put the likely intended word in suggestion.`;

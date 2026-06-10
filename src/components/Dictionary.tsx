@@ -4,6 +4,8 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { CEFR_LEVELS, type CefrLevel, type DefineResult } from "@/lib/types";
 import { TRY_WORDS } from "@/lib/level-test";
 import { useLocalStorage } from "@/lib/use-local-storage";
+import SpeakButton from "./SpeakButton";
+import PracticeBox from "./PracticeBox";
 
 interface Props {
   level: CefrLevel;
@@ -14,6 +16,22 @@ interface Props {
 type Status = "idle" | "loading" | "done" | "error";
 
 const RECENT_KEY = "lexicon-recent";
+const KO_KEY = "lexicon-ko";
+
+const FEATURES = [
+  {
+    title: "Defined at your level",
+    body: "Full-sentence definitions written with vocabulary you already know — no dictionary loops.",
+  },
+  {
+    title: "Synonyms, compared",
+    body: "Every synonym comes with its level and a note on when to choose it over the headword.",
+  },
+  {
+    title: "Listen and practise",
+    body: "Hear every word and sentence spoken aloud, then write your own and get coached.",
+  },
+];
 
 export default function Dictionary({ level, onLevelChange, onRetakeTest }: Props) {
   const [query, setQuery] = useState("");
@@ -23,8 +41,11 @@ export default function Dictionary({ level, onLevelChange, onRetakeTest }: Props
   const [image, setImage] = useState<string | null>(null);
   const [imageStatus, setImageStatus] = useState<Status>("idle");
   const [recentRaw, setRecentRaw] = useLocalStorage(RECENT_KEY);
+  const [koRaw, setKoRaw] = useLocalStorage(KO_KEY);
   const inputRef = useRef<HTMLInputElement>(null);
   const lookupId = useRef(0);
+
+  const showKo = koRaw !== "off";
 
   const recent = useMemo<string[]>(() => {
     try {
@@ -97,13 +118,36 @@ export default function Dictionary({ level, onLevelChange, onRetakeTest }: Props
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-rule">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4">
+      <header className="sticky top-0 z-10 border-b border-rule bg-paper/90 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-6 py-3.5">
           <p className="font-display text-2xl italic">
             Learner&rsquo;s Lexicon<span className="text-ballpoint">.</span>
           </p>
-          <div className="flex items-center gap-3">
-            <label className="font-mono text-xs tracking-[0.15em] text-ink-soft">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showKo}
+              onClick={() => setKoRaw(showKo ? "off" : "on")}
+              className="flex items-center gap-2"
+              title="Show Korean translations"
+            >
+              <span className="whitespace-nowrap font-mono text-xs tracking-[0.15em] text-ink-soft">
+                한국어
+              </span>
+              <span
+                className={`relative h-5 w-9 rounded-full transition-colors ${
+                  showKo ? "bg-ballpoint" : "bg-rule"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                    showKo ? "translate-x-4.5" : "translate-x-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+            <label className="hidden font-mono text-xs tracking-[0.15em] text-ink-soft sm:block">
               LEVEL
               <select
                 value={level}
@@ -117,15 +161,25 @@ export default function Dictionary({ level, onLevelChange, onRetakeTest }: Props
             </label>
             <button
               onClick={onRetakeTest}
-              className="font-mono text-xs tracking-[0.15em] text-ink-soft underline-offset-4 hover:text-ballpoint hover:underline"
+              className="hidden font-mono text-xs tracking-[0.15em] text-ink-soft underline-offset-4 hover:text-ballpoint hover:underline sm:block"
             >
               RETAKE TEST
             </button>
+            <select
+              value={level}
+              onChange={(e) => onLevelChange(e.target.value as CefrLevel)}
+              aria-label="CEFR level"
+              className="rounded-full border border-rule bg-card px-3 py-1 font-mono text-sm text-ink sm:hidden"
+            >
+              {CEFR_LEVELS.map((lv) => (
+                <option key={lv}>{lv}</option>
+              ))}
+            </select>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 pb-24">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 pb-24">
         <form
           className="mt-12"
           onSubmit={(e) => {
@@ -133,7 +187,7 @@ export default function Dictionary({ level, onLevelChange, onRetakeTest }: Props
             lookUp(query);
           }}
         >
-          <div className="flex items-center gap-3 border-b-2 border-ink pb-3 focus-within:border-ballpoint">
+          <div className="flex items-center gap-3 border-b-2 border-ink pb-3 transition-colors focus-within:border-ballpoint">
             <input
               ref={inputRef}
               value={query}
@@ -147,7 +201,7 @@ export default function Dictionary({ level, onLevelChange, onRetakeTest }: Props
             <button
               type="submit"
               disabled={status === "loading"}
-              className="shrink-0 rounded-full bg-ballpoint px-6 py-2.5 font-medium text-white hover:opacity-90 disabled:opacity-40"
+              className="shrink-0 rounded-full bg-ballpoint px-6 py-2.5 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {status === "loading" ? "Looking up…" : "Look up"}
             </button>
@@ -164,17 +218,21 @@ export default function Dictionary({ level, onLevelChange, onRetakeTest }: Props
                 <button
                   key={w}
                   onClick={() => lookUp(w)}
-                  className="rounded-full border border-rule bg-card px-4 py-1.5 text-sm hover:border-ballpoint hover:text-ballpoint"
+                  className="rounded-full border border-rule bg-card px-4 py-1.5 text-sm transition-colors hover:border-ballpoint hover:text-ballpoint"
                 >
                   {w}
                 </button>
               ))}
             </div>
-            <p className="mt-16 max-w-md font-display text-2xl italic leading-relaxed text-ink-soft">
-              Every word here is explained in plain English a {level} reader
-              can follow — defined in full sentences, compared with its
-              synonyms, and drawn as a picture.
-            </p>
+            <div className="mt-16 grid gap-4 sm:grid-cols-3">
+              {FEATURES.map((f, i) => (
+                <div key={f.title} className="rounded-2xl border border-rule bg-card p-6">
+                  <p className="font-mono text-xs text-ballpoint">{`0${i + 1}`}</p>
+                  <p className="mt-3 font-display text-xl">{f.title}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">{f.body}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -188,7 +246,7 @@ export default function Dictionary({ level, onLevelChange, onRetakeTest }: Props
         )}
 
         {status === "error" && (
-          <div className="mt-12 rounded-xl border border-rule bg-card p-6 fade-up">
+          <div className="mt-12 rounded-2xl border border-rule bg-card p-6 fade-up">
             <p className="font-medium">The lookup didn&rsquo;t work.</p>
             <p className="mt-1 text-sm text-ink-soft">{error}</p>
           </div>
@@ -215,106 +273,165 @@ export default function Dictionary({ level, onLevelChange, onRetakeTest }: Props
         )}
 
         {status === "done" && result && result.isWord && (
-          <article className="mt-12 grid gap-10 fade-up lg:grid-cols-[1fr_300px]">
-            <div>
-              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-                <h1 className="hl-swipe font-display text-6xl leading-none">
-                  {result.headword}
-                </h1>
-                <span className="font-mono text-lg text-ink-soft">
-                  /{result.pronunciation}/
-                </span>
-                <span
-                  className="rounded-full bg-ballpoint-wash px-2.5 py-0.5 font-mono text-xs text-ballpoint"
-                  title="CEFR level of this word"
-                >
-                  {result.wordLevel}
-                </span>
+          <article className="mt-10 rounded-3xl border border-rule bg-card p-6 shadow-[0_2px_16px_rgba(28,27,26,0.05)] fade-up sm:p-10">
+            <div className="grid gap-10 lg:grid-cols-[1fr_300px]">
+              <div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <h1 className="hl-swipe font-display text-6xl leading-none">
+                    {result.headword}
+                  </h1>
+                  <SpeakButton text={result.headword} className="h-9 w-9" />
+                  <span className="font-mono text-lg text-ink-soft">
+                    /{result.pronunciation}/
+                  </span>
+                  <span
+                    className="rounded-full bg-ballpoint-wash px-2.5 py-0.5 font-mono text-xs text-ballpoint"
+                    title="CEFR level of this word"
+                  >
+                    {result.wordLevel}
+                  </span>
+                </div>
+                {showKo && result.koreanGloss && (
+                  <p className="mt-3 text-lg text-ink-soft">{result.koreanGloss}</p>
+                )}
+
+                {result.entries.map((entry, ei) => (
+                  <section key={ei} className="mt-8">
+                    <p className="font-display text-xl italic text-ink-soft">
+                      {entry.partOfSpeech}
+                    </p>
+                    <ol className="mt-3 space-y-7">
+                      {entry.senses.map((sense, si) => (
+                        <li key={si} className="grid grid-cols-[2rem_1fr] gap-1">
+                          <span className="font-mono text-sm font-medium text-ballpoint">
+                            {si + 1}
+                          </span>
+                          <div>
+                            <p className="leading-relaxed">{sense.definition}</p>
+                            {showKo && (
+                              <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+                                {sense.definitionKo}
+                              </p>
+                            )}
+                            <ul className="mt-3 space-y-3 border-l-2 border-rule pl-4">
+                              {sense.examples.map((ex) => (
+                                <li key={ex.en} className="flex items-start gap-2.5">
+                                  <SpeakButton text={ex.en} className="mt-1" />
+                                  <div>
+                                    <p className="font-display text-lg italic leading-relaxed text-ink">
+                                      {ex.en}
+                                    </p>
+                                    {showKo && (
+                                      <p className="text-sm leading-relaxed text-ink-soft">
+                                        {ex.ko}
+                                      </p>
+                                    )}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                ))}
+
+                {result.synonyms.length > 0 && (
+                  <section className="mt-10 rounded-2xl border border-rule bg-paper p-6">
+                    <p className="font-mono text-xs tracking-[0.2em] text-ballpoint">
+                      SYNONYMS — CHOOSE THE RIGHT WORD
+                    </p>
+                    <ul className="mt-4 space-y-4">
+                      {result.synonyms.map((syn) => (
+                        <li key={syn.word}>
+                          <div className="flex items-baseline gap-2">
+                            <button
+                              onClick={() => lookUp(syn.word)}
+                              className="font-display text-xl text-ballpoint underline-offset-4 hover:underline"
+                            >
+                              {syn.word}
+                            </button>
+                            <span className="font-mono text-xs text-ink-soft">
+                              {syn.level}
+                            </span>
+                            <SpeakButton text={syn.word} className="h-6 w-6" />
+                          </div>
+                          <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">
+                            {syn.difference}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                <PracticeBox key={result.headword} word={result.headword} level={level} />
               </div>
 
-              {result.entries.map((entry, ei) => (
-                <section key={ei} className="mt-8">
-                  <p className="font-display text-xl italic text-ink-soft">
-                    {entry.partOfSpeech}
-                  </p>
-                  <ol className="mt-3 space-y-6">
-                    {entry.senses.map((sense, si) => (
-                      <li key={si} className="grid grid-cols-[2rem_1fr] gap-1">
-                        <span className="font-mono text-sm font-medium text-ballpoint">
-                          {si + 1}
-                        </span>
-                        <div>
-                          <p className="leading-relaxed">{sense.definition}</p>
-                          <ul className="mt-2 space-y-1.5 border-l-2 border-rule pl-4">
-                            {sense.examples.map((ex) => (
-                              <li
-                                key={ex}
-                                className="font-display text-lg italic leading-relaxed text-ink-soft"
-                              >
-                                {ex}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                </section>
-              ))}
+              <aside className="space-y-6">
+                <figure className="overflow-hidden rounded-2xl border border-rule bg-paper">
+                  {imageStatus === "done" && image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={image}
+                      alt={`Illustration of ${result.headword}`}
+                      className="aspect-square w-full object-cover"
+                    />
+                  ) : imageStatus === "error" ? (
+                    <div className="flex aspect-square items-center justify-center p-6 text-center text-sm text-ink-soft">
+                      The illustration couldn&rsquo;t be drawn this time.
+                    </div>
+                  ) : (
+                    <div
+                      className="shimmer aspect-square w-full"
+                      aria-label="Drawing the illustration"
+                    />
+                  )}
+                  <figcaption className="border-t border-rule px-4 py-2.5 font-mono text-xs text-ink-soft">
+                    fig. — {result.headword}
+                  </figcaption>
+                </figure>
 
-              {result.synonyms.length > 0 && (
-                <section className="mt-10 rounded-xl border border-rule bg-card p-6">
-                  <p className="font-mono text-xs tracking-[0.2em] text-ballpoint">
-                    SYNONYMS — CHOOSE THE RIGHT WORD
-                  </p>
-                  <ul className="mt-4 space-y-4">
-                    {result.synonyms.map((syn) => (
-                      <li key={syn.word}>
-                        <div className="flex items-baseline gap-2">
-                          <button
-                            onClick={() => lookUp(syn.word)}
-                            className="font-display text-xl text-ballpoint underline-offset-4 hover:underline"
-                          >
-                            {syn.word}
-                          </button>
-                          <span className="font-mono text-xs text-ink-soft">
-                            {syn.level}
-                          </span>
-                        </div>
-                        <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">
-                          {syn.difference}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-            </div>
-
-            <aside>
-              <figure className="overflow-hidden rounded-xl border border-rule bg-card">
-                {imageStatus === "done" && image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={image}
-                    alt={`Illustration of ${result.headword}`}
-                    className="aspect-square w-full object-cover"
-                  />
-                ) : imageStatus === "error" ? (
-                  <div className="flex aspect-square items-center justify-center p-6 text-center text-sm text-ink-soft">
-                    The illustration couldn&rsquo;t be drawn this time.
-                  </div>
-                ) : (
-                  <div className="shimmer aspect-square w-full" aria-label="Drawing the illustration" />
+                {result.collocations.length > 0 && (
+                  <section className="rounded-2xl border border-rule bg-paper p-5">
+                    <p className="font-mono text-xs tracking-[0.2em] text-ballpoint">
+                      COMMON PHRASES
+                    </p>
+                    <ul className="mt-3 space-y-4">
+                      {result.collocations.map((col) => (
+                        <li key={col.phrase}>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{col.phrase}</p>
+                            <SpeakButton text={col.example} className="h-6 w-6" />
+                          </div>
+                          <p className="mt-1 font-display text-[15px] italic leading-relaxed text-ink-soft">
+                            {col.example}
+                          </p>
+                          {showKo && (
+                            <p className="text-[13px] leading-relaxed text-ink-soft/80">
+                              {col.exampleKo}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
                 )}
-                <figcaption className="border-t border-rule px-4 py-2.5 font-mono text-xs text-ink-soft">
-                  fig. — {result.headword}
-                </figcaption>
-              </figure>
-            </aside>
+              </aside>
+            </div>
           </article>
         )}
       </main>
+
+      <footer className="border-t border-rule">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 px-6 py-5">
+          <p className="font-mono text-xs text-ink-soft">
+            LEARNER&rsquo;S LEXICON — definitions written at your level
+          </p>
+          <p className="font-mono text-xs text-ink-soft/70">Powered by OpenAI</p>
+        </div>
+      </footer>
     </div>
   );
 }
