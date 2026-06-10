@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LexiLevel · English Dictionary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📖</span>
+      <div>
+        <h1>LexiLevel</h1>
+        <p class="tagline">A dictionary that speaks your level</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="levelBadge" class="level-badge hidden"></span>
+      <button id="settingsBtn" class="ghost-btn" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- ============ SETUP / API KEY ============ -->
+    <section id="setupScreen" class="screen card">
+      <h2>Welcome</h2>
+      <p class="muted">
+        LexiLevel explains English words in <strong>plain English</strong>, tuned to
+        your CEFR level. To begin, paste your Google Gemini API key. It is stored only
+        in your browser (localStorage) and sent straight to Google.
+      </p>
+      <label class="field">
+        <span>Gemini API key</span>
+        <input id="apiKeyInput" type="password" placeholder="AIza..." autocomplete="off" />
+      </label>
+      <p class="hint">
+        Get a free key at
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.
+      </p>
+      <button id="saveKeyBtn" class="primary-btn">Save key &amp; continue</button>
+      <p id="setupError" class="error hidden"></p>
+    </section>
+
+    <!-- ============ LEVEL ASSESSMENT ============ -->
+    <section id="quizScreen" class="screen card hidden">
+      <h2>Quick level check</h2>
+      <p class="muted">A few simple questions tell us which words you already know,
+        so we can explain new ones the right way.</p>
+      <div id="quizProgress" class="quiz-progress"></div>
+      <div id="quizQuestion" class="quiz-question"></div>
+      <div id="quizOptions" class="quiz-options"></div>
+    </section>
+
+    <!-- ============ DICTIONARY ============ -->
+    <section id="dictScreen" class="screen hidden">
+      <div class="search-row card">
+        <input id="wordInput" type="text" placeholder="Type a word, e.g. “curious”" autocomplete="off" />
+        <button id="lookupBtn" class="primary-btn">Look up</button>
+      </div>
+
+      <div id="status" class="status hidden"></div>
+
+      <article id="result" class="result hidden">
+        <div class="result-head">
+          <div>
+            <h2 id="resWord"></h2>
+            <p id="resMeta" class="res-meta"></p>
+          </div>
+          <span id="resLevel" class="word-level"></span>
+        </div>
+
+        <div class="result-grid">
+          <div class="result-main">
+            <section class="block">
+              <h3>Meaning</h3>
+              <div id="resDefs"></div>
+            </section>
+
+            <section class="block">
+              <h3>Synonyms <span class="src-tag">Longman-style</span></h3>
+              <div id="resSyns"></div>
+            </section>
+          </div>
+
+          <aside class="result-image">
+            <h3>Picture it</h3>
+            <div id="imageBox" class="image-box">
+              <span class="image-placeholder">Generating image…</span>
+            </div>
+            <p id="imageCaption" class="image-caption"></p>
+          </aside>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Definitions written in English at your CEFR level · Images by gemini-3.1-flash-image</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
